@@ -1,0 +1,7 @@
+{
+  "name": "Notes-de-Frais",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
