@@ -1,39 +1,42 @@
 <?php
 
+// src/Entity/User.php
 namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-class User
+class User implements UserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["user:read", "vehicle:read"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["user:read", "vehicle:read"])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["user:read"])]
     private ?string $login = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["user:read"])]
     private ?string $password = null;
 
-    /**
-     * @var Collection<int, ExpenseReport>
-     */
     #[ORM\OneToMany(targetEntity: ExpenseReport::class, mappedBy: 'userId')]
+    #[Groups(["user:read"])]
     private Collection $expenseReportsList;
 
-    /**
-     * @var Collection<int, Vehicle>
-     */
     #[ORM\OneToMany(targetEntity: Vehicle::class, mappedBy: 'userId')]
+    #[Groups(["user:read"])]
     private Collection $vehicleList;
 
     public function __construct()
@@ -55,7 +58,6 @@ class User
     public function setName(string $name): static
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -67,7 +69,6 @@ class User
     public function setLogin(string $login): static
     {
         $this->login = $login;
-
         return $this;
     }
 
@@ -79,14 +80,6 @@ class User
     public function setPassword(string $password): static
     {
         $this->password = $password;
-
-        return $this;
-    }
-
-    public function setId(int $id): static
-    {
-        $this->id = $id;
-
         return $this;
     }
 
@@ -98,22 +91,21 @@ class User
         return $this->expenseReportsList;
     }
 
-    public function addExpenseReportsList(ExpenseReport $expenseReportsList): static
+    public function addExpenseReportsList(ExpenseReport $expenseReport): static
     {
-        if (!$this->expenseReportsList->contains($expenseReportsList)) {
-            $this->expenseReportsList->add($expenseReportsList);
-            $expenseReportsList->setUserId($this);
+        if (!$this->expenseReportsList->contains($expenseReport)) {
+            $this->expenseReportsList->add($expenseReport);
+            $expenseReport->setUserId($this);
         }
 
         return $this;
     }
 
-    public function removeExpenseReportsList(ExpenseReport $expenseReportsList): static
+    public function removeExpenseReportsList(ExpenseReport $expenseReport): static
     {
-        if ($this->expenseReportsList->removeElement($expenseReportsList)) {
-            // set the owning side to null (unless already changed)
-            if ($expenseReportsList->getUserId() === $this) {
-                $expenseReportsList->setUserId(null);
+        if ($this->expenseReportsList->removeElement($expenseReport)) {
+            if ($expenseReport->getUserId() === $this) {
+                $expenseReport->setUserId(null);
             }
         }
 
@@ -128,25 +120,42 @@ class User
         return $this->vehicleList;
     }
 
-    public function addVehicleList(Vehicle $vehicleList): static
+    public function addVehicle(Vehicle $vehicle): static
     {
-        if (!$this->vehicleList->contains($vehicleList)) {
-            $this->vehicleList->add($vehicleList);
-            $vehicleList->setUserId($this);
+        if (!$this->vehicleList->contains($vehicle)) {
+            $this->vehicleList->add($vehicle);
+            $vehicle->setUserId($this);
         }
 
         return $this;
     }
 
-    public function removeVehicleList(Vehicle $vehicleList): static
+    public function removeVehicle(Vehicle $vehicle): static
     {
-        if ($this->vehicleList->removeElement($vehicleList)) {
-            // set the owning side to null (unless already changed)
-            if ($vehicleList->getUserId() === $this) {
-                $vehicleList->setUserId(null);
+        if ($this->vehicleList->removeElement($vehicle)) {
+            if ($vehicle->getUserId() === $this) {
+                $vehicle->setUserId(null);
             }
         }
 
         return $this;
     }
+
+    public function getRoles(): array
+    {
+        return ['ROLE_USER']; // Replace with your own roles
+    }
+
+
+    public function eraseCredentials(): void
+    {
+        // No sensitive data to erase
+        // The method body is empty because Symfony does not use this method for security
+    }
+
+    public function getUserIdentifier() :string
+    {
+        return $this->login; // Replace with your own unique identifier
+    }
+
 }

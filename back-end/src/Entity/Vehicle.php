@@ -1,9 +1,11 @@
 <?php
 
+// src/Entity/Vehicle.php
 namespace App\Entity;
 
-use App\Repository\VehicleRepository;
+use App\Repository\VehicleRepository ;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: VehicleRepository::class)]
 class Vehicle
@@ -11,34 +13,29 @@ class Vehicle
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["vehicle:read", "user:read"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["vehicle:read", "user:read"])]
     private ?string $name = null;
 
-    #[ORM\ManyToOne(inversedBy: 'vehicleList')]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'vehicleList')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?FuelType $fuelTypeId = null;
-
-    #[ORM\ManyToOne(inversedBy: 'vehicleList')]
+    #[Groups(["vehicle:read"])]
     private ?User $userId = null;
 
     #[ORM\Column]
+    #[Groups(["vehicle:read", "user:read"])]
     private ?int $fiscalHorses = null;
 
     #[ORM\Column]
+    #[Groups(["vehicle:read", "user:read"])]
     private ?float $ratioPer20000 = null;
 
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function setId(int $id): static
-    {
-        $this->id = $id;
-
-        return $this;
     }
 
     public function getName(): ?string
@@ -49,19 +46,6 @@ class Vehicle
     public function setName(string $name): static
     {
         $this->name = $name;
-
-        return $this;
-    }
-
-    public function getFuelTypeId(): ?FuelType
-    {
-        return $this->fuelTypeId;
-    }
-
-    public function setFuelTypeId(?FuelType $fuelTypeId): static
-    {
-        $this->fuelTypeId = $fuelTypeId;
-
         return $this;
     }
 
@@ -73,7 +57,6 @@ class Vehicle
     public function setUserId(?User $userId): static
     {
         $this->userId = $userId;
-
         return $this;
     }
 
@@ -85,7 +68,6 @@ class Vehicle
     public function setFiscalHorses(int $fiscalHorses): static
     {
         $this->fiscalHorses = $fiscalHorses;
-
         return $this;
     }
 
@@ -97,7 +79,6 @@ class Vehicle
     public function setRatioPer20000(float $ratioPer20000): static
     {
         $this->ratioPer20000 = $ratioPer20000;
-
         return $this;
     }
 }

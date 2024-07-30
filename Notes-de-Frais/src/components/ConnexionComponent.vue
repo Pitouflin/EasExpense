@@ -1,15 +1,17 @@
 <template>
+  <div id="container">
     <h2>Se connecter</h2>
-    <form @submit.prevent="submitForm">
-        <ion-input v-model="login" placeholder="Email" required></ion-input>
-        <ion-input type="password" v-model="password" placeholder="Mot de passe" required></ion-input>
-        <ion-button type="submit">Se connecter</ion-button>
-  </form>
-  <hr/>
+    <form @submit.prevent="submitForm" class="form">
+        <ion-input v-model="login" placeholder="Login" class="input"></ion-input>
+        <ion-input v-model="password" type="password" placeholder="Mot de passe" class="input"></ion-input>
+        <ion-button type="submit" class="button">Se connecter</ion-button>
+    </form>
+    <hr/>
+  </div>
 </template>
 
 <script setup lang="ts">
-  import { IonButton, IonInput } from '@ionic/vue';
+import { IonInput, IonButton } from '@ionic/vue';
   import { onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import axios from 'axios';
@@ -17,6 +19,7 @@
   import {API_BASE_URL} from '../config'
   import { Device } from '@capacitor/device';
 
+  // État pour les champs du formulaire
   const login = ref('');
   const password = ref('');
 
@@ -31,7 +34,7 @@
   // Fonction pour gérer la soumission du formulaire
   const submitForm = async () => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/utilisateur/user/CheckUser`, {
+      const response = await axios.post(`${API_BASE_URL}/user/User/check`, {
           login: login.value,
           password: password.value      
       }, { headers: { 
@@ -51,13 +54,8 @@
           alert("Vous ne pouvez pas vous connecter en tant qu'administrateur ou modérateur depuis ce type d'appareil.")
           return;
         }
-        Preferences.set({key: "id_utilisateur", value: data.id})
-        Preferences.set({key: "nom_utilisateur", value: data.nom})
-        Preferences.set({key: "prenom_utilisateur", value: data.prenom})
-        Preferences.set({key: "mail_utilisateur", value: data.mail})
-        Preferences.set({key: "departement_utilisateur", value: data.departement})
-        Preferences.set({key: "est_active_utilisateur", value: data.est_active})
-        Preferences.set({key: "role_utilisateur", value: data.role.id})
+        Preferences.set({key: "id", value: data.id})
+        Preferences.set({key: "name", value: data.name})
         // Ajouter les infos utilisateur en storage
         router.push('/home');
       } else {
@@ -84,6 +82,7 @@
   //     })
   //   }
   // }
+
   const logDeviceInfo = async () => {
     const info = await Device.getInfo();
 
@@ -94,3 +93,65 @@
     logDeviceInfo();
   })
 </script>
+
+<style scoped>
+
+#container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  width : 80%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0 auto;
+}
+
+#container strong {
+  font-size: 20px;
+  line-height: 26px;
+}
+
+#container p {
+  font-size: 16px;
+  line-height: 22px;
+  
+  color: #8c8c8c;
+  
+  margin: 0;
+}
+
+#container a {
+  text-decoration: none;
+}
+
+.form{
+  border : 1px solid #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  min-width: 300px;
+  padding: 10px;
+}
+
+
+.titre{
+  font-size : 2em;
+  margin : 15px;
+}
+
+.input{
+  border: 1px solid #FFFFFF;
+  margin : 5px;
+  text-align: center;
+}
+
+.button{
+  width: 100%;
+}
+</style>

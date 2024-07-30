@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\ExpenseTypeRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+
 
 #[ORM\Entity(repositoryClass: ExpenseTypeRepository::class)]
 class ExpenseType
@@ -11,9 +13,11 @@ class ExpenseType
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups("ExpenseType:read")]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups("ExpenseType:read")]
     private ?string $name = null;
 
     public function getId(): ?int
