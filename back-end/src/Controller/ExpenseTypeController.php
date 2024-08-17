@@ -14,25 +14,25 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('/expense_type')]
 class ExpenseTypeController extends AbstractController
 {
-    #[Route('/', name: 'app_expense_type')]
-
+    #[Route('/', name: 'app_expense_type', methods: ['GET'])]
     public function list(EntityManagerInterface $em): JsonResponse
     {
-        $ExpenseType = $em->getRepository(ExpenseType::class)->findAll();
-        return $this->json($ExpenseType, 200, [], [AbstractNormalizer::GROUPS => 'ExpenseType:read']);
-    }
+        // Récupérer tous les ExpenseTypes
+        $expenseTypes = $em->getRepository(ExpenseType::class)->findAll();
 
+        // Vérifier si des ExpenseTypes ont été trouvés
+        if (!$expenseTypes) {
+            return $this->json([], 200); // Renvoie un tableau vide si aucun type n'a été trouvé
+        }
 
-    public function index(): Response
-    {
-        return $this->render('expense_type/index.html.twig', [
-            'controller_name' => 'ExpenseTypeController',
-        ]);
+        // Retourner les données JSON avec le groupe de sérialisation correct
+        return $this->json($expenseTypes, 200, [], [AbstractNormalizer::GROUPS => 'expenseType:read']);
     }
 
     #[Route('/{id}', name: 'expenseType_show', methods: ['GET'])]
     public function show(ExpenseType $expenseType, SerializerInterface $serializer): JsonResponse
     {
+        // Sérialiser un seul ExpenseType
         $jsonExpenseType = $serializer->serialize($expenseType, 'json', ['groups' => 'expenseType:read']);
         return new JsonResponse($jsonExpenseType, Response::HTTP_OK, [], true);
     }

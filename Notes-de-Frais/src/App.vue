@@ -1,9 +1,20 @@
 <template>
-  <ion-app>
-    <ion-router-outlet />
-  </ion-app>
+  <div id="app">
+    <Header />
+    <router-view />
+  </div>
 </template>
 
-<script setup lang="ts">
-import { IonApp, IonRouterOutlet } from '@ionic/vue';
+<script>
+import Header from './components/Header.vue';
+
+export default {
+  components: {
+    Header
+  }
+};
 </script>
+
+<style>
+/* Ajoutez les styles globaux ici */
+</style>

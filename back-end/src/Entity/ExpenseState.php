@@ -2,34 +2,35 @@
 
 namespace App\Entity;
 
-use App\Repository\ExpenseTypeRepository;
+use App\Repository\ExpenseStateRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 
-#[ORM\Entity(repositoryClass: ExpenseTypeRepository::class)]
-class ExpenseType
+#[ORM\Entity(repositoryClass: ExpenseStateRepository::class)]
+class ExpenseState
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups("expenseReport:read" , "expenseType:read" , "user:read")]
+    #[Groups("expenseReport:read")]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups("expenseReport:read" , "expenseType:read" , "user:read")]
-    private ?string $name = null;
+    #[Groups("expenseReport:read")]
+    private ?string $value = null;
+
     /**
      * @var Collection<int, ExpenseReport>
      */
-    #[ORM\OneToMany(targetEntity: ExpenseReport::class, mappedBy: 'expenseType')]
-    private Collection $expenseReportList;
+    #[ORM\OneToMany(targetEntity: ExpenseReport::class, mappedBy: 'state')]
+    private Collection $ExpenseReportList;
 
     public function __construct()
     {
-        $this->expenseReportList = new ArrayCollection();
+        $this->ExpenseReportList = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -44,14 +45,14 @@ class ExpenseType
         return $this;
     }
 
-    public function getName(): ?string
+    public function getValue(): ?string
     {
-        return $this->name;
+        return $this->value;
     }
 
-    public function setName(string $name): static
+    public function setValue(string $value): static
     {
-        $this->name = $name;
+        $this->value = $value;
 
         return $this;
     }
@@ -61,14 +62,14 @@ class ExpenseType
      */
     public function getExpenseReportList(): Collection
     {
-        return $this->expenseReportList;
+        return $this->ExpenseReportList;
     }
 
     public function addExpenseReportList(ExpenseReport $expenseReportList): static
     {
-        if (!$this->expenseReportList->contains($expenseReportList)) {
-            $this->expenseReportList->add($expenseReportList);
-            $expenseReportList->setExpenseType($this);
+        if (!$this->ExpenseReportList->contains($expenseReportList)) {
+            $this->ExpenseReportList->add($expenseReportList);
+            $expenseReportList->setState($this);
         }
 
         return $this;
@@ -76,10 +77,10 @@ class ExpenseType
 
     public function removeExpenseReportList(ExpenseReport $expenseReportList): static
     {
-        if ($this->expenseReportList->removeElement($expenseReportList)) {
+        if ($this->ExpenseReportList->removeElement($expenseReportList)) {
             // set the owning side to null (unless already changed)
-            if ($expenseReportList->getExpenseType() === $this) {
-                $expenseReportList->setExpenseType(null);
+            if ($expenseReportList->getState() === $this) {
+                $expenseReportList->setState(null);
             }
         }
 

@@ -9,18 +9,20 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-class User implements UserInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["user:read", "vehicle:read"])]
+    #[Groups(["vehicle:read", "user:read", "expenseReport:read"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["user:read", "vehicle:read"])]
+    #[Groups(["vehicle:read", "user:read", "expenseReport:read"])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
@@ -141,9 +143,26 @@ class User implements UserInterface
         return $this;
     }
 
+    #[ORM\Column(type: 'json')]
+    #[Groups(["user:read"])]
+    private array $roles = [];
+
     public function getRoles(): array
     {
-        return ['ROLE_USER']; // Replace with your own roles
+        // Cette méthode doit retourner un tableau de rôles attribués à l'utilisateur.
+        // Par défaut, Symfony utilise un tableau de chaînes de caractères, avec au minimum 'ROLE_USER'.
+        $roles = $this->roles;
+        // Garantir que chaque utilisateur a au moins le rôle ROLE_USER.
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+
+        return $this;
     }
 
 

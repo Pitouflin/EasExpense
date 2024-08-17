@@ -86,4 +86,34 @@ class FuelType
 
         return $this;
     }
+
+    /**
+     * @return Collection<int, Vehicle>
+     */
+    public function getVehiclesList(): Collection
+    {
+        return $this->vehiclesList;
+    }
+
+    public function addVehiclesList(Vehicle $vehiclesList): static
+    {
+        if (!$this->vehiclesList->contains($vehiclesList)) {
+            $this->vehiclesList->add($vehiclesList);
+            $vehiclesList->setFuelType($this);
+        }
+
+        return $this;
+    }
+
+    public function removeVehiclesList(Vehicle $vehiclesList): static
+    {
+        if ($this->vehiclesList->removeElement($vehiclesList)) {
+            // set the owning side to null (unless already changed)
+            if ($vehiclesList->getFuelType() === $this) {
+                $vehiclesList->setFuelType(null);
+            }
+        }
+
+        return $this;
+    }
 }

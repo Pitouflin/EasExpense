@@ -9,6 +9,8 @@ use App\Entity\User;
 use App\Repository\RoleRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Repository\UserRepository;
+use App\Repository\ExpenseReportRepository;
+use App\Repository\VehicleRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -37,20 +39,65 @@ class UserController extends AbstractController
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
-    #[Route('/User/check', name: 'app_user_check', methods: ['POST'])]
-    public function checkUser(Request $request, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, SerializerInterface $serializer): Response
+    #[Route('/{id}/expense_reports', name: 'user_expense_reports', methods: ['GET'])]
+    public function showExpenses(User $user, SerializerInterface $serializer, ExpenseReportRepository $expenseReportRepository): Response
     {
-        $login = $request->get('login');
-        $password = $request->get('password');
+        // Récupérer la liste des notes de frais pour l'utilisateur, incluant le type de dépense
+        $expenseReports = $expenseReportRepository->findBy(['userId' => $user]);
+    
+        // Sérialiser les notes de frais en JSON, incluant le type de dépense
+        $jsonExpenseReports = $serializer->serialize($expenseReports, 'json', ['groups' => 'expenseReport:read']);
+    
+        // Retourner la réponse JSON
+        return new JsonResponse($jsonExpenseReports, Response::HTTP_OK, [], true);
+    }
+    
 
-        $user = $userRepository->findOneBy(['login' => $login]);
 
-        if ($user && $passwordHasher->isPasswordValid($user, $password)) {
-            $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:read']);
-            return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
+    #[Route('/check', name: 'app_user_check', methods: ['POST'])]
+    public function checkUser(Request $request, UserRepository $userRepository): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $login = $data['login'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$login || !$password) {
+            return new JsonResponse(['message' => 'Login and password are required'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        return new JsonResponse(['error' => 'Invalid credentials'], Response::HTTP_UNAUTHORIZED);
+        // Trouver l'utilisateur par login
+        $user = $userRepository->findOneBy(['login' => $login]);
+
+        if ($user) {
+            // Comparer les mots de passe en clair
+            if ($user->getPassword() === $password) {
+                return new JsonResponse([
+                    'message' => 'Login successful',
+                    'user' => [
+                        'id' => $user->getId(),
+                        'name' => $user->getName(),
+                        'role' => $user->getRoles()[0], // Supposons qu'il y a au moins un rôle
+                    ]
+                ], JsonResponse::HTTP_OK);
+            } else {
+                return new JsonResponse(['message' => 'Invalid credentials'], JsonResponse::HTTP_UNAUTHORIZED);
+            }
+        } else {
+            return new JsonResponse(['message' => 'Invalid credentials'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+    }
+
+    #[Route('/{id}/vehicles', name: 'user_vehicles', methods: ['GET'])]
+    public function showVehicles(User $user, SerializerInterface $serializer, VehicleRepository $vehicleRepository): Response
+    {
+        // Récupérer la liste des notes de frais pour l'utilisateur, incluant le type de dépense
+        $vehicles = $vehicleRepository->findBy(['userId' => $user]);
+    
+        // Sérialiser les notes de frais en JSON, incluant le type de dépense
+        $jsonVehicles = $serializer->serialize($vehicles, 'json', ['groups' => 'vehicle:read']);
+    
+        // Retourner la réponse JSON
+        return new JsonResponse($jsonVehicles, Response::HTTP_OK, [], true);
     }
 
     #[Route('/search', name: 'app_user_search', methods: ['POST'])]
