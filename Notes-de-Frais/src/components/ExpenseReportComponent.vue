@@ -65,6 +65,11 @@ const handleSubmit = async () => {
     return;
   }
 
+  if (!expenseType.value) {
+    alert("Le type de dépense est obligatoire.");
+    return;
+  }
+
   // Mettre à jour le montant si le type de dépense est 'Kilométrage'
   if (isExpenseType2 && selectedVehicle.value) {
     await calculateFinalExpenseValue();
@@ -72,8 +77,17 @@ const handleSubmit = async () => {
     finalExpenseValue.value = expenseValue.value;
   }
 
-  await saveExpenseReport();
-  await generatePdf();
+  // Vérifiez si l'ID et la date sont bien définis avant de générer le PDF
+  if (finalExpenseValue.value && expenseType.value && expenseComment.value) {
+    await saveExpenseReport();
+    if (expenseId.value && expenseDate.value) {
+      await generatePdf();
+    } else {
+      console.error('L\'ID ou la date de la note de frais est manquant.');
+    }
+  } else {
+    console.error('Certaines informations sont manquantes.');
+  }
 };
 
 const generatePdf = async () => {
@@ -82,8 +96,8 @@ const generatePdf = async () => {
 
   const doc = new jsPDF();
   doc.text('Note de frais', 10, 10);
-  doc.text(`ID : ${expenseId.value}`, 10, 20); // Ajout de l'ID de la note de frais
-  doc.text(`Date : ${expenseDate.value}`, 10, 30); // Ajout de la date au format JJ/MM/AAAA
+  doc.text(`ID : ${expenseId.value || 'N/A'}`, 10, 20); // Ajout de l'ID de la note de frais
+  doc.text(`Date : ${expenseDate.value || 'N/A'}`, 10, 30); // Ajout de la date au format JJ/MM/AAAA
   doc.text(`Utilisateur : ${userName.value}`, 10, 40);
   doc.text(`Commentaire : ${expenseComment.value}`, 10, 50);
   doc.text(`Type de dépense : ${typeName}`, 10, 60);
@@ -104,13 +118,22 @@ const saveExpenseReport = async () => {
       return;
     }
 
+    // Assurez-vous que expenseValue est un nombre
+    const expenseValueNumber = parseFloat(expenseValue.value);
+    if (isNaN(expenseValueNumber)) {
+      console.error('Montant de la dépense invalide');
+      return;
+    }
+
     const payload = {
       userId: userId,
-      vehicleId: selectedVehicleId.value,
+      vehicleId: isExpenseType2 ? selectedVehicleId.value : null, // Inclure vehicleId uniquement pour les types nécessitant un véhicule
       expenseTypeId: expenseType.value,
-      expenseValue: finalExpenseValue.value,
+      expenseValue: expenseValueNumber, // Assurez-vous que expenseValue est un nombre
       comment: expenseComment.value
     };
+
+    console.log('Payload avant envoi:', payload); // Log du payload
 
     const response = await axios.post('http://127.0.0.1:8000/expense_report/create', payload, {
       headers: {
@@ -125,9 +148,10 @@ const saveExpenseReport = async () => {
       expenseDate.value = new Date().toLocaleDateString('fr-FR'); // Format JJ/MM/AAAA
     }
   } catch (error) {
-    console.error('Erreur lors de l\'enregistrement de la note de frais :', error);
+    console.error('Erreur lors de l\'enregistrement de la note de frais :', error.response ? error.response.data : error);
   }
 };
+
 
 const calculateFinalExpenseValue = async () => {
   try {

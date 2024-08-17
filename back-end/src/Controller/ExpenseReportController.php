@@ -70,49 +70,50 @@ public function list(EntityManagerInterface $em): JsonResponse
 
     // src/Controller/ExpenseReportController.php
 
-#[Route('/create', name: 'expense_report_create', methods: ['POST'])]
-public function create(Request $request, EntityManagerInterface $em): JsonResponse
-{
-    $data = json_decode($request->getContent(), true);
-
-    if (!isset($data['userId'], $data['vehicleId'], $data['expenseTypeId'], $data['expenseValue'], $data['comment'])) {
-        return new JsonResponse(['error' => 'Champs manquants'], Response::HTTP_BAD_REQUEST);
+    #[Route('/create', name: 'expense_report_create', methods: ['POST'])]
+    public function create(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+    
+        // Vérifiez que les champs requis sont présents
+        if (!isset($data['userId'], $data['expenseTypeId'], $data['expenseValue'], $data['comment'])) {
+            return new JsonResponse(['error' => 'Champs manquants'], Response::HTTP_BAD_REQUEST);
+        }
+    
+        $user = $em->getRepository(User::class)->find($data['userId']);
+        $expenseType = $em->getRepository(ExpenseType::class)->find($data['expenseTypeId']);
+        $vehicle = isset($data['vehicleId']) ? $em->getRepository(Vehicle::class)->find($data['vehicleId']) : null;
+    
+        if (!$user || !$expenseType || ($data['vehicleId'] && !$vehicle)) {
+            return new JsonResponse(['error' => 'Utilisateur, véhicule ou type de dépense invalide'], Response::HTTP_BAD_REQUEST);
+        }
+    
+        $expenseReport = new ExpenseReport();
+        $expenseReport->setUserId($user);
+        $expenseReport->setVehicle($vehicle);
+        $expenseReport->setExpenseType($expenseType);
+        $expenseReport->setValue($data['expenseValue']);
+        $expenseReport->setComment($data['comment'] ?? '');
+    
+        // Ajout de la date de création
+        $expenseReport->setDate(new \DateTime());
+    
+        // Par défaut, l'état est "En attente"
+        $expenseReport->setState($em->getRepository(ExpenseState::class)->find(1));
+    
+        $errors = $this->validator->validate($expenseReport);
+        if (count($errors) > 0) {
+            return new JsonResponse(['error' => (string) $errors], Response::HTTP_BAD_REQUEST);
+        }
+    
+        $em->persist($expenseReport);
+        $em->flush();
+    
+        $this->logger->info('Expense report created.', ['expense_report_id' => $expenseReport->getId()]);
+    
+        return new JsonResponse(['status' => 'Note de frais créée avec succès', 'id' => $expenseReport->getId()], Response::HTTP_CREATED);
     }
-
-    $user = $em->getRepository(User::class)->find($data['userId']);
-    $vehicle = $em->getRepository(Vehicle::class)->find($data['vehicleId']);
-    $expenseType = $em->getRepository(ExpenseType::class)->find($data['expenseTypeId']);
-
-    if (!$user || !$vehicle || !$expenseType) {
-        return new JsonResponse(['error' => 'Utilisateur, véhicule ou type de dépense invalide'], Response::HTTP_BAD_REQUEST);
-    }
-
-    $expenseReport = new ExpenseReport();
-    $expenseReport->setUserId($user);
-    $expenseReport->setVehicle($vehicle);
-    $expenseReport->setExpenseType($expenseType);
-    $expenseReport->setValue($data['expenseValue']);
-    $expenseReport->setComment($data['comment'] ?? '');
-
-    // Ajout de la date de création
-    $expenseReport->setDate(new \DateTime());
-
-    // Par défaut, l'état est "En attente"
-    $expenseReport->setState($em->getRepository(ExpenseState::class)->find(1));
-
-    $errors = $this->validator->validate($expenseReport);
-    if (count($errors) > 0) {
-        return new JsonResponse(['error' => (string) $errors], Response::HTTP_BAD_REQUEST);
-    }
-
-    $em->persist($expenseReport);
-    $em->flush();
-
-    $this->logger->info('Expense report created.', ['expense_report_id' => $expenseReport->getId()]);
-
-    return new JsonResponse(['status' => 'Note de frais créée avec succès', 'id' => $expenseReport->getId()], Response::HTTP_CREATED);
-}
-
+    
 
 #[Route('/update_state/{id}', name: 'expense_report_update_state', methods: ['PUT'])]
 public function updateState(Request $request, ExpenseReport $expenseReport, EntityManagerInterface $em): JsonResponse
