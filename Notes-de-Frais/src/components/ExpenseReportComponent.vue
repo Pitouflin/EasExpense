@@ -1,6 +1,7 @@
 <template>
   <div id="container">
-    <h2>Déclarer une note de frais</h2>
+    <h1>Déclarer une note de frais</h1>
+    <h6>Tous les champs sont obligatoires</h6>
     <form class="form" @submit.prevent="handleSubmit">
       <ion-select placeholder="Type de dépense" v-model="expenseType">
         <ion-select-option
@@ -11,7 +12,11 @@
         </ion-select-option>
       </ion-select>
 
-      <ion-select placeholder="Sélectionner le véhicule" v-model="selectedVehicleId">
+      <!-- Afficher le sélecteur de véhicule uniquement si le type de dépense est 2 -->
+      <ion-select
+        v-if="isExpenseType2"
+        placeholder="Sélectionner le véhicule"
+        v-model="selectedVehicleId">
         <ion-select-option
           v-for="vehicle in userVehicles"
           :key="vehicle.id"
@@ -19,7 +24,6 @@
           {{ vehicle.name }}
         </ion-select-option>
       </ion-select>
-
       <ion-input v-model="expenseValue" placeholder="Montant" class="input"></ion-input>
       <ion-input v-model="expenseComment" placeholder="Commentaire Dépense" class="input"></ion-input>
       <ion-button type="submit" class="button">Créer</ion-button>
@@ -28,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import jsPDF from 'jspdf';
 import { API_BASE_URL } from '../config';
 import { IonInput, IonButton, IonSelect, IonSelectOption } from '@ionic/vue';
@@ -46,6 +50,9 @@ const userName = ref(''); // Nom de l'utilisateur
 const expenseId = ref<number | null>(null); // ID de la note de frais
 const expenseDate = ref<string>(''); // Date de la note de frais
 
+// Variable pour stocker le montant après application du coefficient
+const finalExpenseValue = ref('');
+
 const updateSelectedVehicle = () => {
   selectedVehicle.value = userVehicles.value.find(vehicle => vehicle.id === selectedVehicleId.value) || null;
 };
@@ -58,6 +65,13 @@ const handleSubmit = async () => {
     return;
   }
 
+  // Mettre à jour le montant si le type de dépense est 'Kilométrage'
+  if (isExpenseType2 && selectedVehicle.value) {
+    await calculateFinalExpenseValue();
+  } else {
+    finalExpenseValue.value = expenseValue.value;
+  }
+
   await saveExpenseReport();
   await generatePdf();
 };
@@ -66,10 +80,6 @@ const generatePdf = async () => {
   const selectedType = optionsType.value.find(option => option.id === expenseType.value);
   const typeName = selectedType ? selectedType.name : 'N/A';
 
-  if (typeName === 'Kilométrage' && selectedVehicle.value) {
-    await X();
-  }
-
   const doc = new jsPDF();
   doc.text('Note de frais', 10, 10);
   doc.text(`ID : ${expenseId.value}`, 10, 20); // Ajout de l'ID de la note de frais
@@ -77,7 +87,7 @@ const generatePdf = async () => {
   doc.text(`Utilisateur : ${userName.value}`, 10, 40);
   doc.text(`Commentaire : ${expenseComment.value}`, 10, 50);
   doc.text(`Type de dépense : ${typeName}`, 10, 60);
-  doc.text(`Montant : ${expenseValue.value}`, 10, 70);
+  doc.text(`Montant : ${finalExpenseValue.value}`, 10, 70);
 
   if (selectedVehicle.value) {
     doc.text(`Véhicule : ${selectedVehicle.value.name}`, 10, 80);
@@ -98,7 +108,7 @@ const saveExpenseReport = async () => {
       userId: userId,
       vehicleId: selectedVehicleId.value,
       expenseTypeId: expenseType.value,
-      expenseValue: expenseValue.value,
+      expenseValue: finalExpenseValue.value,
       comment: expenseComment.value
     };
 
@@ -119,12 +129,12 @@ const saveExpenseReport = async () => {
   }
 };
 
-const X = async () => {
+const calculateFinalExpenseValue = async () => {
   try {
     if (selectedVehicle.value && selectedVehicle.value.ratioPer20000 !== undefined) {
       const montantFinal = parseFloat(expenseValue.value) * selectedVehicle.value.ratioPer20000;
       console.log(`Montant final après application du ratio: ${montantFinal}`);
-      expenseValue.value = montantFinal.toFixed(2);
+      finalExpenseValue.value = montantFinal.toFixed(2);
     } else {
       console.error('ratioPer20000 non trouvé pour', selectedVehicle.value ? selectedVehicle.value.name : 'inconnu');
     }
@@ -159,6 +169,9 @@ const getUserDetails = async () => {
     console.error('Erreur lors de la récupération des détails de l\'utilisateur:', error);
   }
 };
+
+// Propriété calculée pour vérifier si le type de dépense est 2
+const isExpenseType2 = computed(() => expenseType.value === 2);
 
 onMounted(() => {
   getTypes();

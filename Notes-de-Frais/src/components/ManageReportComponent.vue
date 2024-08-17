@@ -11,6 +11,7 @@
           <th>Montant</th>
           <th>Commentaire</th>
           <th>État</th>
+          <th>Type de dépense</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -23,6 +24,7 @@
           <td>{{ report.value }}</td>
           <td>{{ report.comment }}</td>
           <td>{{ report.state.value }}</td>
+          <td>{{ report.expenseType.name }}</td>
           <td>
             <button @click="showModal(report.id, 'approve')">Approuver</button>
             <button @click="showModal(report.id, 'reject')">Renvoyer</button>

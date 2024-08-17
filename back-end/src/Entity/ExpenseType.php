@@ -15,11 +15,11 @@ class ExpenseType
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups("expenseReport:read" , "expenseType:read" , "user:read")]
+    #[Groups("expenseType:read" , "expenseReport:read" ,  "user:read")]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups("expenseReport:read" , "expenseType:read" , "user:read")]
+    #[Groups("expenseType:read" , "expenseReport:read" , "user:read")]
     private ?string $name = null;
     /**
      * @var Collection<int, ExpenseReport>
